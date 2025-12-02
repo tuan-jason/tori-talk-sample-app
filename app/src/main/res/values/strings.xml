@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">android-socket</string>
+    <string name="btn_disconnect">Disconnect</string>
+    <string name="btn_connect">Connect</string>
+    <string name="btn_video_call">Video Call</string>
+    <string name="btn_stop_video_call">Stop Video Call</string>
+    <string name="btn_interrupt_talking">Interrupt Talking</string>
+    <string name="btn_greeting">Greeting</string>
+    <string name="btn_swap_face">Swap Face</string>
+    <string name="btn_swap_voice">Swap Voice</string>
+    <string name="btn_send_chat_message">Send Chat Message</string>
+    <string name="btn_send_video_message">Send Video Message</string>
+    <string name="btn_send_custom_message">Custom</string>
+    <string name="input_text_message_hint">Send a message</string>
+    <string name="status_connecting">Connecting…</string>
+</resources>

@@ -1,0 +1,106 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+    id 'com.google.dagger.hilt.android'
+    id 'kotlin-parcelize'
+    id 'jacoco'
+}
+
+android {
+    namespace 'com.torilab.socket'
+    compileSdkVersion 36
+
+    defaultConfig {
+        applicationId "com.torilab.socket"
+        minSdkVersion 26
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+
+        // Warning: Upgrading this might break build, unless Kotlin Gradle Plugin is also upgraded
+        // to compatible version.
+        // Check the mapping at: https://developer.android.com/jetpack/androidx/releases/compose-kotlin
+        kotlinCompilerExtensionVersion "1.5.7"
+    }
+
+    packaging {
+        resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
+        resources.pickFirsts.addAll([
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md",
+                "META-INF/LICENSE"
+        ])
+    }
+
+    testOptions {
+        unitTests.all { Test test ->
+            test.jacoco.includeNoLocationClasses = true
+            test.jacoco.excludes = ['jdk.internal.*']
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+dependencies {
+    implementation libs.tori.talk.sdk
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.activity.compose
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.ui
+    implementation libs.androidx.ui.graphics
+    implementation libs.androidx.ui.tooling.preview
+    implementation libs.androidx.material3
+    implementation libs.moshi
+    implementation libs.hilt
+    kapt(libs.hiltCompiler)
+    implementation libs.flow.layout
+
+    testImplementation libs.junit
+    testImplementation libs.coroutines.test
+    testImplementation libs.robolectric
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+    androidTestImplementation platform(libs.androidx.compose.bom)
+    androidTestImplementation libs.androidx.ui.test.junit4
+    debugImplementation libs.androidx.ui.tooling
+    debugImplementation libs.androidx.ui.test.manifest
+}
+
+apply from: "$rootDir/gradle/jacoco-report.gradle"
+
+registerJacocoReport(
+        taskName: "appJacocoReport"
+)

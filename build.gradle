@@ -1,0 +1,112 @@
+import groovy.xml.XmlParser
+import java.util.regex.Pattern
+import java.util.regex.Matcher
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+    dependencies {
+        classpath libs.gradle
+        classpath libs.kotlin.gradle.plugin
+        classpath libs.google.services
+        classpath libs.firebase.crashlytics.gradle
+        classpath libs.hilt.gradle.plugin
+    }
+}
+
+apply from: 'https://gist.githubusercontent.com/tuan-jason/67b24bee582bb1eb03876fcb06927b54/raw/f22def1c23ef726feae97e981f821742dcfeef82/extra_repositories.gradle'
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+        maven { url 'https://maven.lokalise.com' }
+
+        // Inject everything defined in extra_repositories.gradle applied above.
+        rootProject.ext.addExternalRepos(delegate as RepositoryHandler)
+    }
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}
+
+def coverageModules = [
+        [project: project(':app'), reportPath: 'reports/jacoco/appJacocoReport/appJacocoReport.xml'],
+]
+
+tasks.register('updateCoverageReadme') {
+    group = 'verification'
+    description = 'Updates README.md with the latest combined Jacoco coverage.'
+
+    doLast {
+        long covered = 0
+        long missed = 0
+
+        coverageModules.each { module ->
+            def reportFile = module.project.layout.buildDirectory.file(module.reportPath).get().asFile
+            if (!reportFile.exists()) {
+                logger.lifecycle("Coverage report not found for ${module.project.path}: ${reportFile}")
+            } else {
+                def parser = new XmlParser(false, false)
+                parser.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+                parser.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+                parser.setFeature("http://xml.org/sax/features/external-general-entities", false)
+                parser.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+
+                def report = parser.parse(reportFile)
+                def lineCounter = report.'counter'.find { it.@type == 'LINE' }
+                if (lineCounter) {
+                    covered += lineCounter.attribute('covered').toString().toLong()
+                    missed += lineCounter.attribute('missed').toString().toLong()
+                }
+            }
+        }
+
+        if (covered + missed == 0) {
+            logger.lifecycle('No coverage data available; README will not be updated.')
+            return
+        }
+
+        double ratio = covered / (covered + missed).toDouble()
+        String percentageText = String.format(Locale.US, '%.2f%%', ratio * 100d)
+
+        String badgeColor =
+                ratio >= 0.9 ? 'brightgreen' :
+                        ratio >= 0.75 ? 'green' :
+                                ratio >= 0.6 ? 'yellowgreen' :
+                                        ratio >= 0.45 ? 'yellow' :
+                                                ratio >= 0.3 ? 'orange' : 'red'
+
+        String encodedPercentage = URLEncoder.encode(percentageText, 'UTF-8')
+        String badgeMarkdown = "![Coverage](https://img.shields.io/badge/coverage-${encodedPercentage}-${badgeColor})"
+
+        File readmeFile = rootProject.file('README.md')
+        if (!readmeFile.exists()) {
+            logger.warn('README.md not found; skipping coverage update.')
+            return
+        }
+
+        String startMarker = '<!-- COVERAGE:START -->'
+        String endMarker = '<!-- COVERAGE:END -->'
+        String newBlock = """${startMarker}
+${badgeMarkdown}
+Coverage: ${percentageText}
+${endMarker}"""
+
+        String readmeContent = readmeFile.getText('UTF-8')
+        if (readmeContent.contains(startMarker) && readmeContent.contains(endMarker)) {
+            String pattern = "(?s)" + Pattern.quote(startMarker) + ".*?" + Pattern.quote(endMarker)
+            readmeContent = readmeContent.replaceAll(pattern, Matcher.quoteReplacement(newBlock))
+        } else {
+            readmeContent += "\n\n${newBlock}\n"
+        }
+
+        readmeFile.setText(readmeContent, 'UTF-8')
+        logger.lifecycle("Updated README.md with coverage ${percentageText}")
+    }
+}

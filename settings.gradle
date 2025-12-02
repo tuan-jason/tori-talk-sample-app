@@ -1,0 +1,2 @@
+rootProject.name = "Tori Talk Sample App"
+include ':app'

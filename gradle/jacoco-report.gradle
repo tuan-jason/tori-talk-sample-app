@@ -1,0 +1,69 @@
+
+def defaultFileFilter = [
+        '**/R.class',
+        '**/R$*.class',
+        '**/*$ViewInjector*.*',
+        '**/*$ViewBinder*.*',
+        '**/BuildConfig.*',
+        '**/Manifest*.*',
+        '**/*MapperImpl*.*',
+        '**/*$inlined$*.*',
+        '**/*ComposableSingletons*.*',
+        '**/com/torilab/socket/ui/**',
+        '**/com/torilab/socket/MainActivity*',
+        '**/com/torilab/socket/App*',
+        '**/com/castalk/socket/data/model/**',
+        '**/com/castalk/socket/data/repository/SocketRepositoryImpl$*',
+        '**/com/castalk/socket/extensions/JsonMapParceler*'
+]
+
+def registerJacocoReport = { Map config ->
+    String taskName = config.taskName ?: "${project.name}JacocoReport"
+    String variant = (config.variant ?: "release")
+    String testTask = (config.testTask ?: "test${variant.capitalize()}UnitTest")
+    Collection<String> sourceDirs = config.sourceDirs ?: ["src/main/java", "src/main/kotlin"]
+    Collection<String> excludes = config.excludes ?: defaultFileFilter
+
+    tasks.register(taskName, JacocoReport) {
+        dependsOn testTask
+        reports {
+            xml.required = true
+            html.required = true
+        }
+
+        classDirectories.setFrom(
+                layout.buildDirectory.dir("intermediates/javac/${variant}/classes").map { directory ->
+                    fileTree(directory.asFile) {
+                        exclude excludes
+                    }
+                },
+                layout.buildDirectory.dir("tmp/kotlin-classes/${variant}").map { directory ->
+                    fileTree(directory.asFile) {
+                        exclude excludes
+                    }
+                }
+        )
+
+        sourceDirectories.setFrom(
+                files(
+                        sourceDirs.collect { srcDir ->
+                            def dir = project.file(srcDir)
+                            dir.exists() ? dir : null
+                        }.findAll { it != null }
+                )
+        )
+
+        executionData.setFrom(
+                files(
+                        layout.buildDirectory.file("jacoco/${testTask}.exec"),
+                        layout.buildDirectory.file("outputs/unit_test_code_coverage/${variant}UnitTest/${testTask}.exec")
+                ).filter { it.exists() }
+        )
+    }
+
+    tasks.named(taskName) {
+        finalizedBy rootProject.tasks.named("updateCoverageReadme")
+    }
+}
+
+ext.registerJacocoReport = registerJacocoReport
