@@ -6,8 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import com.castalk.socket.TalkSession
-import com.castalk.socket.extensions.JsonHelper
+import com.castalk.socket.data.model.scene.PinSceneResult
+import com.castalk.socket.data.model.scene.SkipSceneResult
+import com.castalk.socket.data.model.scene.UnpinSceneResult
 import com.squareup.moshi.Moshi
+import com.torilab.android.common.JsonHelper
 
 @Preview(
     name = "WsChatScreen – Light",
@@ -34,7 +37,26 @@ private fun Preview_WsChatScreen() {
                     "This is a sample message in preview",
                     "Compose makes UI fun 🚀") }
             ),
-            onSend = { /* no-op */ }
+            transcripts = emptyList(),
+            onSend = { /* no-op */ },
+            onClearTranscripts = { /* no-op */ },
+            onSendVideoMessage = { msg, code, markDown -> /* no-op */ },
+            onGetSceneInfo = { _, _ -> },
+            onSceneSkipped = { _, callback ->
+                callback(SkipSceneResult.Success(Unit))
+            },
+            onScenePinned = { _, callback ->
+                callback(PinSceneResult.Success(payload = Unit))
+            },
+            onSceneUnpinned = { callback ->
+                callback(UnpinSceneResult.Success(payload = Unit))
+            },
+            onGetSchedule = { _ ->
+            },
+            onGetRecording = { _ ->
+            },
+            onPublishCamera = {},
+            onUnpublishCamera = {}
         )
     }
 }

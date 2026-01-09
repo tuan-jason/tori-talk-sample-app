@@ -9,28 +9,28 @@ import kotlinx.parcelize.Parcelize
 @JsonClass(generateAdapter = true)
 data class SocketMessageRequest(
 
-    @Json(name = "id")
+    @param:Json(name = "id")
     var id: String? = null,
 
-    @Json(name = "chat_group_id")
+    @param:Json(name = "chat_group_id")
     var chatGroupId: String? = null,
 
-    @Json(name = "language")
+    @param:Json(name = "language")
     var language: String? = null,
 
-    @Json(name = "auth")
+    @param:Json(name = "auth")
     var auth: String? = null,
 
-    @Json(name = "is_recording")
+    @param:Json(name = "is_recording")
     var isRecording: Boolean? = null,
 
-    @Json(name = "data")
+    @param:Json(name = "data")
     var data: String? = null,
 
-    @Json(name = "is_chat")
+    @param:Json(name = "is_chat")
     var isChat: Boolean = true,
 
-    @Json(name = "user_emotion_code")
+    @param:Json(name = "user_emotion_code")
     var voiceEmotion: Int? = null
 
 ) : Parcelable

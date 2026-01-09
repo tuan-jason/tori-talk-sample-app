@@ -18,7 +18,7 @@ moshi = "1.15.0"
 hiltAndroid = "2.50"
 hiltGradlePlugin = "2.51.1"
 flowLayout = "0.36.0"
-toriTalkSdk = "2.0.0"
+toriTalkSdk = "2.1.0"
 
 # Test
 coroutinesTest = "1.8.1"

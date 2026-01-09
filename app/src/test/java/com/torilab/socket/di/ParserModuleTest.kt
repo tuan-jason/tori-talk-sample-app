@@ -1,6 +1,6 @@
 package com.torilab.socket.di
 
-import com.castalk.socket.extensions.JsonHelper
+import com.torilab.android.common.JsonHelper
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test

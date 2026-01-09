@@ -1,6 +1,7 @@
 package com.torilab.socket.ui.chat
 
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.castalk.socket.TalkSession
 import com.torilab.socket.R
+import com.torilab.socket.WSS_URL_DEV
+import com.torilab.socket.WSS_URL_UAT
 
 @Composable
 fun WsConnectScreen(
@@ -74,18 +78,54 @@ fun WsConnectScreen(
             )
             Spacer(Modifier.height(20.dp))
 
-            Button(
-                onClick = { doConnect() },
-                enabled = !isConnecting,              // <— was: url.isNotBlank() && !isConnecting
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6954B7),
-                    contentColor = Color.White
-                ),
-                modifier = Modifier
-                    .height(44.dp)
-                    .defaultMinSize(minWidth = 120.dp)
-            ) { Text(stringResource(R.string.btn_connect)) }
+            val environmentToggleState = remember(url) {
+                EnvironmentToggleState(
+                    devUrl = WSS_URL_DEV,
+                    uatUrl = WSS_URL_UAT,
+                    initialUrl = url
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = {
+                        url = environmentToggleState.toggle()
+                        error = null
+                    },
+                    enabled = !isConnecting,
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF6954B7)
+                    ),
+                    modifier = Modifier
+                        .height(44.dp)
+                        .defaultMinSize(minWidth = 88.dp)
+                ) {
+                    Text(environmentToggleState.toggleButtonLabel)
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Button(
+                    onClick = { doConnect() },
+                    enabled = !isConnecting,              // <— was: url.isNotBlank() && !isConnecting
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF6954B7),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier
+                        .height(44.dp)
+                        .defaultMinSize(minWidth = 120.dp)
+                ) {
+                    Text(stringResource(R.string.btn_connect))
+                }
+            }
         }
 
         if (isConnecting) {

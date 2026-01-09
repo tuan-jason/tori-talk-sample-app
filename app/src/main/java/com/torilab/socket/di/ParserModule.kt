@@ -1,8 +1,8 @@
 package com.torilab.socket.di
 
-import com.castalk.socket.extensions.JsonHelper
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.torilab.android.common.JsonHelper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
