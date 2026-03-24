@@ -1,7 +1,7 @@
 package com.torilab.socket
 
 import android.os.Bundle
-import android.util.Log
+import com.trl.log.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -35,7 +35,12 @@ class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
 
     // Reuse the same talk session across screens
-    private val talkSession by lazy { TalkSession() }
+    private val talkSession by lazy {
+        TalkSession().apply {
+            enableLoudSpeaker {  }
+            debugEnabled = true
+        }
+    }
     private val chatVm: ChatViewModel by viewModels()
     private val sessionEventReducer by lazy { SessionEventReducer(
         chatViewModel = chatVm, talkSession = talkSession)

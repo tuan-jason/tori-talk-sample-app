@@ -13,6 +13,8 @@
     <string name="btn_send_custom_message">Custom</string>
     <string name="btn_mute_microphone">Mute</string>
     <string name="btn_unmute_microphone">Unmute</string>
+    <string name="btn_mute_avatar_voice">Mute Avatar Voice</string>
+    <string name="btn_unmute_avatar_voice">Unmute Avatar Voice</string>
     <string name="btn_get_scene">Scene info</string>
     <string name="btn_skip_scene">Skip scene</string>
     <string name="btn_pin_scene">Pin scene</string>
@@ -25,6 +27,7 @@
     <string name="permission_call_required">You need permission to start a call.</string>
     <string name="permission_settings_action">Settings</string>
     <string name="msg_microphone_toggle_failed">Unable to update the microphone. Try again.</string>
+    <string name="msg_avatar_voice_toggle_failed">Unable to update avatar voice. Try again.</string>
     <string name="audio_only_mode_label">Audio only mode</string>
     <string name="msg_scene_info_failed">Unable to fetch scene info: %1$s</string>
     <string name="msg_scene_skip_success">Requested scene skip.</string>

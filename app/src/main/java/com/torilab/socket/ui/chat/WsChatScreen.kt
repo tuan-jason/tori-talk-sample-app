@@ -5,7 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
-import android.util.Log
+import com.trl.log.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -125,6 +125,7 @@ fun WsChatScreen(
         mutableStateOf(talkSession.isMicrophoneMuted() ?: false)
     }
     var isMicrophoneToggleInProgress by rememberSaveable { mutableStateOf(false) }
+    var isAvatarVoiceMuted by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var cameraPreviewRenderer by remember { mutableStateOf<CameraPreviewRenderer?>(null) }
@@ -161,9 +162,13 @@ fun WsChatScreen(
                     videoCallVisualState.onCallStarted(callData.videoView)
                     onSend.invoke("LiveKit video renderer is ready.")
                 }
+
                 is StartVideoCallResult.Failure -> {
                     val error = result.error
-                    Log.e(TAG, "startVideoCall failed code: ${error.code} message: ${error.message}")
+                    Log.e(
+                        TAG,
+                        "startVideoCall failed code: ${error.code} message: ${error.message}"
+                    )
                     onSend.invoke("Start Call exception: ${error.message}")
                     talkSession.stopVideoCall()
                     when (error.code) {
@@ -174,6 +179,7 @@ fun WsChatScreen(
                                 )
                             }
                         }
+
                         else -> videoCallVisualState.onCallFailed()
                     }
                 }
@@ -211,7 +217,9 @@ fun WsChatScreen(
             showPermissionDeniedSnackbar()
         }
     }
-    var pendingPublishCameraPermissionCallback by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
+    var pendingPublishCameraPermissionCallback by remember {
+        mutableStateOf<((Boolean) -> Unit)?>(null)
+    }
     val publishCameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -246,6 +254,7 @@ fun WsChatScreen(
     }
 
     LaunchedEffect(videoRenderer) {
+        isAvatarVoiceMuted = false
         if (videoRenderer == null) {
             isMicrophoneMuted = false
             isMicrophoneToggleInProgress = false
@@ -305,6 +314,8 @@ fun WsChatScreen(
                     setIsMicrophoneMuted = { isMicrophoneMuted = it },
                     isMicrophoneToggleInProgress = isMicrophoneToggleInProgress,
                     setIsMicrophoneToggleInProgress = { isMicrophoneToggleInProgress = it },
+                    isAvatarVoiceMuted = isAvatarVoiceMuted,
+                    setIsAvatarVoiceMuted = { isAvatarVoiceMuted = it },
                     onGetSceneInfo = onGetSceneInfo,
                     onSceneSkipped = onSceneSkipped,
                     onScenePinned = onScenePinned,
@@ -323,96 +334,102 @@ fun WsChatScreen(
                 )
                 val actionButtons = ChatActionRegistry.buildActionButtons(actionContext)
 
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(ActionButtonTokens.buttonSpacing),
-            verticalArrangement = Arrangement.spacedBy(ActionButtonTokens.buttonSpacing),
-        ) {
-            actionButtons.forEachIndexed { index, actionButton ->
-                Button(
-                    onClick = actionButton.onClick,
-                    shape = RoundedCornerShape(0.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ActionButtonTokens.colorFor(index),
-                        contentColor = Color.White
-                    ),
-                    enabled = actionButton.enabled,
-                    contentPadding = PaddingValues(4.dp),
+                FlowRow(
                     modifier = Modifier
-                        .defaultMinSize(
-                            minWidth = ActionButtonTokens.minButtonWidth,
-                            minHeight = ActionButtonTokens.buttonHeight
-                        )
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(ActionButtonTokens.buttonSpacing),
+                    verticalArrangement = Arrangement.spacedBy(ActionButtonTokens.buttonSpacing),
                 ) {
-                    Text(
-                        text = stringResource(actionButton.labelResId),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelSmall,
-                        maxLines = 3
-                    )
+                    actionButtons.forEachIndexed { index, actionButton ->
+                        Button(
+                            onClick = actionButton.onClick,
+                            shape = RoundedCornerShape(0.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ActionButtonTokens.colorFor(index),
+                                contentColor = Color.White
+                            ),
+                            enabled = actionButton.enabled,
+                            contentPadding = PaddingValues(4.dp),
+                            modifier = Modifier
+                                .defaultMinSize(
+                                    minWidth = ActionButtonTokens.minButtonWidth,
+                                    minHeight = ActionButtonTokens.buttonHeight
+                                )
+                        ) {
+                            Text(
+                                text = stringResource(actionButton.labelResId),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 3
+                            )
+                        }
+                    }
                 }
-            }
-        }
 
                 val callRendererModifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(start = 24.dp, end = 20.dp, top = 16.dp)
 
-                    if (videoRenderer != null) {
-                        val renderer = videoRenderer
-                        Log.d(TAG, "Adding video rendered to screen: $renderer")
-                        Box(
-                            modifier = callRendererModifier
-                        ) {
-                            // Video renderer at the bottom
-                            AndroidView(
-                                factory = {
-                                    (renderer.parent as? ViewGroup)?.removeView(renderer)
-                                    renderer
-                                },
-                                modifier = Modifier.fillMaxSize()
-                            )
-                            TranscriptOverlay(transcripts)
+                if (videoRenderer != null) {
+                    val renderer = videoRenderer
+                    Log.d(TAG, "Adding video rendered to screen: $renderer isLaidOut: ${renderer.isLaidOut} w: ${renderer.width} - h: ${renderer.height}")
+                    Box(
+                        modifier = callRendererModifier
+                    ) {
+                        // Video renderer at the bottom
+                        AndroidView(
+                            factory = {
+                                Log.v(TAG, "Showing renderer: $renderer")
+                                renderer
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
 
-                            val overlayRenderer = cameraPreviewRenderer
-                            Log.v(TAG, "Got cameraPreviewRender: $cameraPreviewRenderer")
-                            if (overlayRenderer != null) {
-                                val overlayView = overlayRenderer as? View
-                                if (overlayView != null) {
-                                    key(overlayRenderer) {
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.TopStart)
-                                                .offset {
-                                                    IntOffset(
-                                                        cameraPreviewOverlayState.offset.x.roundToInt(),
-                                                        cameraPreviewOverlayState.offset.y.roundToInt()
-                                                    )
+                        TranscriptOverlay(transcripts)
+
+                        val overlayRenderer = cameraPreviewRenderer
+                        Log.v(TAG, "Got cameraPreviewRender: $cameraPreviewRenderer")
+                        if (overlayRenderer != null) {
+                            val overlayView = overlayRenderer as? View
+                            if (overlayView != null) {
+                                key(overlayRenderer) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .offset {
+                                                IntOffset(
+                                                    cameraPreviewOverlayState.offset.x.roundToInt(),
+                                                    cameraPreviewOverlayState.offset.y.roundToInt()
+                                                )
+                                            }
+                                            .pointerInput(overlayRenderer) {
+                                                detectDragGestures { change, dragAmount ->
+                                                    @Suppress("DEPRECATION")
+                                                    change.consumeAllChanges()
+                                                    cameraPreviewOverlayState.dragBy(dragAmount)
                                                 }
-                                                .pointerInput(overlayRenderer) {
-                                                    detectDragGestures { change, dragAmount ->
-                                                        @Suppress("DEPRECATION")
-                                                        change.consumeAllChanges()
-                                                        cameraPreviewOverlayState.dragBy(dragAmount)
-                                                    }
-                                                }
-                                        ) {
-                                            AndroidView(
-                                                factory = {
-                                                    (overlayView.parent as? ViewGroup)?.removeView(overlayView)
+                                            }
+                                    ) {
+                                        AndroidView(
+                                            factory = {
+                                                (overlayView.parent as? ViewGroup)?.removeView(
                                                     overlayView
-                                                }
-                                            )
-                                        }
+                                                )
+                                                overlayView
+                                            }
+                                        )
                                     }
-                                } else {
-                                    Log.e(TAG, "Camera preview renderer is not a View: $overlayRenderer")
                                 }
+                            } else {
+                                Log.e(
+                                    TAG,
+                                    "Camera preview renderer is not a View: $overlayRenderer"
+                                )
                             }
                         }
+                    }
                 } else if (isAudioOnlyPlaceholderVisible) {
                     Box(
                         modifier = callRendererModifier
@@ -472,7 +489,11 @@ fun WsChatScreen(
                                 socketMessageRequest.isChat = true
 
                                 talkSession.sendMessage(
-                                    jsonHelper.toJson(socketMessageRequest, SocketMessageRequest::class.java))
+                                    jsonHelper.toJson(
+                                        socketMessageRequest,
+                                        SocketMessageRequest::class.java
+                                    )
+                                )
                                 outgoing = ""
 
                             }
