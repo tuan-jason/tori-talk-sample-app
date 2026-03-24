@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.material3.SnackbarHostState
 import com.castalk.socket.ITalkSession
+import com.castalk.socket.OnAvatarVoiceStateChanged
 import com.castalk.socket.data.model.camera.PublishCameraResult
 import com.castalk.socket.data.model.recording.GetRecordingResult
 import com.castalk.socket.data.model.scene.GetScheduleResult
@@ -33,6 +34,8 @@ internal data class ChatActionContext(
     val setIsMicrophoneMuted: (Boolean) -> Unit,
     val isMicrophoneToggleInProgress: Boolean,
     val setIsMicrophoneToggleInProgress: (Boolean) -> Unit,
+    val isAvatarVoiceMuted: Boolean,
+    val setIsAvatarVoiceMuted: (Boolean) -> Unit,
     val onGetSceneInfo: (String?, (Result<SceneInfo>) -> Unit) -> Unit,
     val onSceneSkipped: (String?, (SkipSceneResult) -> Unit) -> Unit,
     val onScenePinned: (String?, (PinSceneResult) -> Unit) -> Unit,
@@ -66,6 +69,7 @@ internal object ChatActionRegistry {
 
     private val callSpecificActions: List<ChatAction> = listOf(
         MicrophoneToggleAction,
+        AvatarVoiceToggleAction,
         SceneInfoAction,
         SkipSceneAction,
         PinSceneAction,
@@ -248,6 +252,38 @@ private object MicrophoneToggleAction : ChatAction {
                 context.talkSession.unmuteMicrophone(callback)
             } else {
                 context.talkSession.muteMicrophone(callback)
+            }
+        }
+    }
+}
+
+private object AvatarVoiceToggleAction : ChatAction {
+    override fun create(context: ChatActionContext): ActionButtonSpec {
+        val labelRes = if (context.isAvatarVoiceMuted) {
+            R.string.btn_unmute_avatar_voice
+        } else {
+            R.string.btn_mute_avatar_voice
+        }
+        return ActionButtonSpec(
+            labelResId = labelRes
+        ) {
+            val currentlyMuted = context.isAvatarVoiceMuted
+            Log.d(TAG, "AvatarVoiceToggleAction currentlyMuted: $currentlyMuted")
+            val callback: OnAvatarVoiceStateChanged = { success ->
+                context.coroutineScope.launch {
+                    if (success) {
+                        context.setIsAvatarVoiceMuted(!currentlyMuted)
+                    } else {
+                        context.snackbarHostState.showSnackbar(
+                            message = context.context.getString(R.string.msg_avatar_voice_toggle_failed)
+                        )
+                    }
+                }
+            }
+            if (currentlyMuted) {
+                context.talkSession.unmuteAvatarVoice(callback)
+            } else {
+                context.talkSession.muteAvatarVoice(callback)
             }
         }
     }
@@ -436,6 +472,11 @@ private object  CameraAction : ChatAction {
                         when (result) {
                             is PublishCameraResult.Success -> {
                                 val cameraRenderer = result.cameraView.cameraView
+
+                                cameraRenderer?.setOnFrameCallback { bmp ->
+                                    Log.v(TAG, "Got frame: $bmp")
+                                }
+
                                 Log.i(TAG, "Publish camera result: $cameraRenderer")
                                 if (cameraRenderer != null) {
                                     context.setPublishedCameraView(cameraRenderer)
@@ -460,7 +501,7 @@ private object  CameraAction : ChatAction {
                                 )
                             }
 
-                            is PublishCameraResult.Unpublished -> {}
+                            else -> {}
                         }
                     }
                 }

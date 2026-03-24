@@ -1,6 +1,6 @@
 package com.torilab.socket
 
-import android.util.Log
+import com.trl.log.Log
 import androidx.compose.ui.graphics.Color
 import com.castalk.socket.TalkSession
 import com.castalk.socket.data.model.SessionEvent
@@ -22,14 +22,13 @@ import com.torilab.android.common.scene.SceneInfo
 import com.torilab.android.common.scene.ScheduleInfo
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.lang.reflect.Proxy
@@ -43,12 +42,12 @@ class ChatViewModelTest {
     @Before
     fun setUp() {
         viewModel = ChatViewModel()
-        mockkStatic(Log::class)
-        every { Log.d(any(), any()) } returns 0
-        every { Log.w(any(), any<String>()) } returns 0
-        every { Log.i(any(), any()) } returns 0
-        every { Log.v(any(), any<String>()) } returns 0
-        every { Log.e(any(), any<String>()) } returns 0
+        Log.setDebugEnabled(false)
+    }
+
+    @After
+    fun tearDown() {
+        Log.setDebugEnabled(false)
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.torilab.socket
 
-import android.util.Log
+import com.trl.log.Log
 import com.castalk.socket.TalkSession
 import com.castalk.socket.data.model.SessionEvent
 import com.torilab.android.common.transcript.UserTranscriptType

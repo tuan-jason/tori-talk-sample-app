@@ -1,6 +1,6 @@
 package com.torilab.socket
 
-import android.util.Log
+import com.trl.log.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString

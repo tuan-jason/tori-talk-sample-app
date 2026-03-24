@@ -40,7 +40,7 @@ private fun Preview_WsChatScreen() {
             transcripts = emptyList(),
             onSend = { /* no-op */ },
             onClearTranscripts = { /* no-op */ },
-            onSendVideoMessage = { msg, code, markDown -> /* no-op */ },
+            onSendVideoMessage = { _, _, _ -> /* no-op */ },
             onGetSceneInfo = { _, _ -> },
             onSceneSkipped = { _, callback ->
                 callback(SkipSceneResult.Success(Unit))

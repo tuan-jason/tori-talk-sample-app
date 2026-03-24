@@ -8,7 +8,9 @@ import com.castalk.socket.data.model.camera.PublishCameraResult
 import com.torilab.socket.R
 import com.torilab.socket.call.VideoCallVisualState
 import com.castalk.socket.ui.CameraPreviewRenderer
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +33,7 @@ class ChatActionRegistryTest {
     private fun buildContext(
         showCallControls: Boolean,
         isMicrophoneMuted: Boolean,
+        isAvatarVoiceMuted: Boolean = false,
         publishedCameraView: CameraPreviewRenderer? = null,
         onPublishCamera: ((PublishCameraResult) -> Unit) -> Unit = { },
         onUnpublishCamera: () -> Unit = {},
@@ -56,6 +59,8 @@ class ChatActionRegistryTest {
             setIsMicrophoneMuted = {},
             isMicrophoneToggleInProgress = false,
             setIsMicrophoneToggleInProgress = {},
+            isAvatarVoiceMuted = isAvatarVoiceMuted,
+            setIsAvatarVoiceMuted = {},
             onGetSceneInfo = { _, _ -> },
             onSceneSkipped = { _, _ -> },
             onScenePinned = { _, _ -> },
@@ -84,6 +89,8 @@ class ChatActionRegistryTest {
             specs.any {
                 it.labelResId == R.string.btn_mute_microphone ||
                     it.labelResId == R.string.btn_unmute_microphone ||
+                    it.labelResId == R.string.btn_mute_avatar_voice ||
+                    it.labelResId == R.string.btn_unmute_avatar_voice ||
                     it.labelResId == R.string.btn_get_scene ||
                     it.labelResId == R.string.btn_skip_scene ||
                     it.labelResId == R.string.btn_pin_scene ||
@@ -103,6 +110,65 @@ class ChatActionRegistryTest {
             buildContext(showCallControls = true, isMicrophoneMuted = false)
         )
         assertTrue(unmutedSpecs.any { it.labelResId == R.string.btn_mute_microphone })
+    }
+
+    @Test
+    fun `avatar voice button reflects mute state when controls visible`() {
+        val mutedSpecs = ChatActionRegistry.buildActionButtons(
+            buildContext(showCallControls = true, isMicrophoneMuted = false, isAvatarVoiceMuted = true)
+        )
+        assertTrue(mutedSpecs.any { it.labelResId == R.string.btn_unmute_avatar_voice })
+
+        val unmutedSpecs = ChatActionRegistry.buildActionButtons(
+            buildContext(showCallControls = true, isMicrophoneMuted = false, isAvatarVoiceMuted = false)
+        )
+        assertTrue(unmutedSpecs.any { it.labelResId == R.string.btn_mute_avatar_voice })
+    }
+
+    @Test
+    fun `avatar voice action toggles muted state when mute request succeeds`() {
+        every { talkSession.muteAvatarVoice(any()) } answers {
+            firstArg<(Boolean) -> Unit>().invoke(true)
+        }
+        var isAvatarMuted = false
+        val specs = ChatActionRegistry.buildActionButtons(
+            buildContext(
+                showCallControls = true,
+                isMicrophoneMuted = false,
+                isAvatarVoiceMuted = isAvatarMuted
+            ).copy(
+                setIsAvatarVoiceMuted = { isAvatarMuted = it }
+            )
+        )
+
+        val avatarVoiceSpec = specs.first { it.labelResId == R.string.btn_mute_avatar_voice }
+        avatarVoiceSpec.onClick.invoke()
+
+        assertTrue(isAvatarMuted)
+        verify(exactly = 1) { talkSession.muteAvatarVoice(any()) }
+    }
+
+    @Test
+    fun `avatar voice action toggles muted state when unmute request succeeds`() {
+        every { talkSession.unmuteAvatarVoice(any()) } answers {
+            firstArg<(Boolean) -> Unit>().invoke(true)
+        }
+        var isAvatarMuted = true
+        val specs = ChatActionRegistry.buildActionButtons(
+            buildContext(
+                showCallControls = true,
+                isMicrophoneMuted = false,
+                isAvatarVoiceMuted = isAvatarMuted
+            ).copy(
+                setIsAvatarVoiceMuted = { isAvatarMuted = it }
+            )
+        )
+
+        val avatarVoiceSpec = specs.first { it.labelResId == R.string.btn_unmute_avatar_voice }
+        avatarVoiceSpec.onClick.invoke()
+
+        assertFalse(isAvatarMuted)
+        verify(exactly = 1) { talkSession.unmuteAvatarVoice(any()) }
     }
 
     @Test
